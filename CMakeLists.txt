@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4)
-project(franka_controller)
+project(franka_controllers)
 
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD 14)
@@ -38,7 +38,7 @@ generate_dynamic_reconfigure_options(
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES franka_controller
+  LIBRARIES franka_controllers
   CATKIN_DEPENDS
     controller_interface
     dynamic_reconfigure
@@ -55,11 +55,11 @@ catkin_package(
   DEPENDS Franka
 )
 
-add_library(franka_controller
+add_library(franka_controllers
   src/elbow_example_controller.cpp
   src/cartesian_pose_example_controller.cpp
-  src/cartesian_velocity_example_controller.cpp
-  src/joint_position_example_controller.cpp
+  src/cartesian_velocity_controller.cpp
+  src/joint_position_controller.cpp
   src/joint_velocity_example_controller.cpp
   src/model_example_controller.cpp
   src/joint_impedance_example_controller.cpp
@@ -68,7 +68,7 @@ add_library(franka_controller
   src/dual_arm_cartesian_impedance_example_controller.cpp
 )
 
-add_dependencies(franka_controller
+add_dependencies(franka_controllers
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
   ${PROJECT_NAME}_generate_messages_cpp
@@ -76,22 +76,22 @@ add_dependencies(franka_controller
   ${PROJECT_NAME}_gencfg
 )
 
-target_link_libraries(franka_controller PUBLIC
+target_link_libraries(franka_controllers PUBLIC
   ${Franka_LIBRARIES}
   ${catkin_LIBRARIES}
 )
 
-target_include_directories(franka_controller SYSTEM PUBLIC
+target_include_directories(franka_controllers SYSTEM PUBLIC
   ${Franka_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
-target_include_directories(franka_controller PUBLIC
+target_include_directories(franka_controllers PUBLIC
   include
 )
 
 ## Installation
-install(TARGETS franka_controller
+install(TARGETS franka_controllers
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -102,7 +102,7 @@ install(DIRECTORY launch
 install(DIRECTORY config
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
-install(FILES franka_controller_plugin.xml
+install(FILES franka_controllers_plugin.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 catkin_install_python(
@@ -120,9 +120,9 @@ if(CLANG_TOOLS)
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
   )
-  add_format_target(franka_controller FILES ${SOURCES} ${HEADERS})
-  add_tidy_target(franka_controller
+  add_format_target(franka_controllers FILES ${SOURCES} ${HEADERS})
+  add_tidy_target(franka_controllers
     FILES ${SOURCES}
-    DEPENDS franka_controller
+    DEPENDS franka_controllers
   )
 endif()

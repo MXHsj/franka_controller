@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>franka_controller</name>
+  <name>franka_controllers</name>
   <version>0.7.0</version>
   <description>franka_example_controllers provides example code for controlling Franka Emika research robots with ros_control</description>
   <maintainer email="support@franka.de">Franka Emika GmbH</maintainer>
@@ -38,6 +38,6 @@
   <exec_depend>rospy</exec_depend>
 
   <export>
-    <controller_interface plugin="${prefix}/franka_controller_plugin.xml"/>
+    <controller_interface plugin="${prefix}/franka_controllers_plugin.xml"/>
   </export>
 </package>

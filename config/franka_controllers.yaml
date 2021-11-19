@@ -9,8 +9,8 @@ joint_velocity_example_controller:
         - panda_joint6
         - panda_joint7
 
-joint_position_example_controller:
-    type: franka_example_controllers/JointPositionExampleController
+joint_position_controller:
+    type: franka_controllers/JointPositionController
     joint_names:
         - panda_joint1
         - panda_joint2
@@ -28,8 +28,8 @@ elbow_example_controller:
     type: franka_example_controllers/ElbowExampleController
     arm_id: panda
 
-cartesian_velocity_example_controller:
-    type: franka_example_controllers/CartesianVelocityExampleController
+cartesian_velocity_controller:
+    type: franka_controllers/CartesianVelocityController
     arm_id: panda
 
 model_example_controller:
