@@ -60,17 +60,6 @@ namespace franka_controllers
     {
       auto state_handle = state_interface->getHandle(arm_id + "_robot");
       std::array<double, 7> q_start = {{0, -M_PI_4, 0, -3 * M_PI_4, 0, M_PI_2, M_PI_4}};
-      // CHECK IF IN READY-POSITION - COMMENTED
-      // for (size_t i = 0; i < q_start.size(); i++) {
-      //   if (std::abs(state_handle.getRobotState().q_d[i] - q_start[i]) > 0.1) {
-      //     ROS_ERROR_STREAM(
-      //         "CartesianVelocityExampleController: Robot is not in the expected starting position "
-      //         "for running this example. Run `roslaunch franka_example_controllers "
-      //         "move_to_start.launch robot_ip:=<robot-ip> load_gripper:=<has-attached-gripper>` "
-      //         "first.");
-      //     return false;
-      //   }
-      // }
     }
     catch (const hardware_interface::HardwareInterfaceException &e)
     {
@@ -146,7 +135,14 @@ namespace franka_controllers
     // } else if (rot_mat[6] < 0) {
     //   rpy[1] = copysign(rpy[1], 1);
     // }
-    rpy[0] = (rpy[0] < 0) ? rpy[0] + 6.28 : rpy[0];
+    rpy[0] = (rpy[0] < 0) ? rpy[0] + M_PI : rpy[0];
+    for (int i = 0; i < 2; i++)
+    {
+      if (rpy[i] < 0)
+        rpy[i] += 2 * M_PI;
+      if (rpy[i] > 2 * M_PI)
+        rpy[i] -= 2 * M_PI;
+    }
     return rpy;
   }
 
@@ -169,6 +165,8 @@ namespace franka_controllers
     return Pz;
   }
 
+  bool isNewPoseGoal = true;
+  std::array<double, 6> initial_pose_error;
   std::array<double, 6> calcNewVel(const std::array<double, 12> &curr_goal,
                                    const std::array<double, 16> &curr_pose,
                                    const std::array<double, 16> &prev_pose,
@@ -207,10 +205,10 @@ namespace franka_controllers
     double de_w_z = prev_vel[5] - (curr_rpy[2] - prev_rpy[2]) / dt.toSec();
 
     // params
-    double linear_ramp = 0.0002;   // linear velocity increment  0.00002
-    double angular_ramp = 0.00012; // angular velocity increment 0.00002
-    double linear_max = 0.5;       // maximum linear velocity 0.2
-    double angular_max = 0.04;     // maximum angular velocity 0.02
+    double linear_ramp = 0.0002;  // linear velocity increment  0.00002
+    double angular_ramp = 0.0002; // angular velocity increment 0.00002
+    double linear_max = 0.4;      // maximum linear velocity 0.2
+    double angular_max = 300;     // maximum angular velocity 0.02
 
     // PD velocity command
     double desired_v_x = 0.14 * e_v_x;                    //+ 0.1 * de_v_x;      // kp = 0.1
@@ -221,52 +219,71 @@ namespace franka_controllers
     double desired_w_z = 0.0017 * e_w_z + 0.2 * de_w_z;   // kp = 0.0008, kd = 0.2
     auto cmd_vel = prev_vel;
 
-    if (std::abs(cmd_vel[0]) <= linear_max)
-    {
-      cmd_vel[0] += copysign(linear_ramp, desired_v_x - prev_vel[0]);
-      // cmd_vel[0] = desired_v_x * 0.6;
-    }
-    if (std::abs(cmd_vel[1]) <= linear_max)
-    {
-      cmd_vel[1] += copysign(linear_ramp, desired_v_y - prev_vel[1]);
-      // cmd_vel[1] = desired_v_y * 0.6;
-    }
-    if (std::abs(cmd_vel[2]) <= linear_max)
-    {
-      cmd_vel[2] += copysign(linear_ramp, desired_v_z - prev_vel[2]);
-      // cmd_vel[2] = desired_v_z * 0.6;
-    }
-    if (desired_w_x != prev_vel[3])
-    {
-      cmd_vel[3] += copysign(angular_ramp, desired_w_x - prev_vel[3]);
-    }
-    else
-    {
-      cmd_vel[3] += 0.0;
-    }
-    if (desired_w_y != prev_vel[4])
-    {
-      cmd_vel[4] += copysign(angular_ramp, desired_w_y - prev_vel[4]);
-    }
-    else
-    {
-      cmd_vel[4] += 0.0;
-    }
-
-    if (desired_w_z != prev_vel[5])
-    {
-      cmd_vel[5] += copysign(angular_ramp, desired_w_z - prev_vel[5]);
-    }
-    else
-    {
-      cmd_vel[5] += 0.0;
-    }
-
-    // for (int vel_idx = 3; vel_idx <= 5; vel_idx++) {
-    //   cmd_vel[vel_idx] = (std::abs(cmd_vel[vel_idx]) < angular_max)
-    //                          ? cmd_vel[vel_idx]
-    //                          : copysign(angular_max, cmd_vel[vel_idx]);
+    // if (std::abs(cmd_vel[0]) <= linear_max)
+    // {
+    //   cmd_vel[0] += copysign(linear_ramp, desired_v_x - prev_vel[0]);
+    //   // cmd_vel[0] = desired_v_x * 0.6;
     // }
+    // if (std::abs(cmd_vel[1]) <= linear_max)
+    // {
+    //   cmd_vel[1] += copysign(linear_ramp, desired_v_y - prev_vel[1]);
+    //   // cmd_vel[1] = desired_v_y * 0.6;
+    // }
+    // if (std::abs(cmd_vel[2]) <= linear_max)
+    // {
+    //   cmd_vel[2] += copysign(linear_ramp, desired_v_z - prev_vel[2]);
+    //   // cmd_vel[2] = desired_v_z * 0.6;
+    // }
+    // if (desired_w_x != prev_vel[3])
+    // {
+    //   cmd_vel[3] += copysign(angular_ramp, desired_w_x - prev_vel[3]);
+    // }
+    // else
+    // {
+    //   cmd_vel[3] += 0.0;
+    // }
+    // if (desired_w_y != prev_vel[4])
+    // {
+    //   cmd_vel[4] += copysign(angular_ramp, desired_w_y - prev_vel[4]);
+    // }
+    // else
+    // {
+    //   cmd_vel[4] += 0.0;
+    // }
+
+    // if (desired_w_z != prev_vel[5])
+    // {
+    //   cmd_vel[5] += copysign(angular_ramp, desired_w_z - prev_vel[5]);
+    // }
+    // else
+    // {
+    //   cmd_vel[5] += 0.0;
+    // }
+
+    // std::cout << "e_w_x" << e_w_x << std::endl;
+    if (abs(e_v_x) > 0.001 && isNewPoseGoal)
+    {
+      initial_pose_error[0] = e_v_x;
+      initial_pose_error[1] = e_v_y;
+      initial_pose_error[2] = e_v_z;
+      initial_pose_error[3] = e_w_x;
+      initial_pose_error[4] = e_w_y;
+      initial_pose_error[5] = e_w_z;
+      isNewPoseGoal = false;
+      std::cout << "update initial pose error \n";
+    }
+
+    if (!isNewPoseGoal)
+    {
+      // vx
+      // double v_x = -4 * linear_max * pow((e_v_x / initial_pose_error[0]), 2) + 4 * linear_max * abs(e_v_x / initial_pose_error[0]);
+      // cmd_vel[0] = copysign(v_x, e_v_x) + copysign(linear_ramp, e_v_x);
+      // std::cout << "going " << e_v_x << " " << cmd_vel[0] << std::endl;
+      // wy
+      double w_y = -4 * angular_max * pow((e_w_y / initial_pose_error[4]), 2) + 4 * angular_max * abs(e_w_y / initial_pose_error[4]);
+      cmd_vel[4] = copysign(w_y, e_w_y) + 20 * copysign(angular_ramp, e_w_y);
+      std::cout << "going " << e_w_y / initial_pose_error[4] << " " << e_w_y << " " << cmd_vel[4] << std::endl;
+    }
 
     // std::cout << "--------------------------INFO-----------------------------" << std::endl;
     // std::cout << "e_v_x:" << e_v_x << " e_v_y:" << e_v_y << " e_v_z:" << e_v_z << std::endl;
