@@ -59,18 +59,6 @@ namespace franka_controllers
     try
     {
       auto state_handle = state_interface->getHandle(arm_id + "_robot");
-      std::array<double, 7> q_start = {{0, -M_PI_4, 0, -3 * M_PI_4, 0, M_PI_2, M_PI_4}};
-      // CHECK IF IN READY-POSITION - COMMENTED
-      // for (size_t i = 0; i < q_start.size(); i++) {
-      //   if (std::abs(state_handle.getRobotState().q_d[i] - q_start[i]) > 0.1) {
-      //     ROS_ERROR_STREAM(
-      //         "CartesianVelocityExampleController: Robot is not in the expected starting position "
-      //         "for running this example. Run `roslaunch franka_example_controllers "
-      //         "move_to_start.launch robot_ip:=<robot-ip> load_gripper:=<has-attached-gripper>` "
-      //         "first.");
-      //     return false;
-      //   }
-      // }
     }
     catch (const hardware_interface::HardwareInterfaceException &e)
     {
@@ -146,7 +134,7 @@ namespace franka_controllers
     // } else if (rot_mat[6] < 0) {
     //   rpy[1] = copysign(rpy[1], 1);
     // }
-    rpy[0] = (rpy[0] < 0) ? rpy[0] + 6.28 : rpy[0];
+    rpy[0] = (rpy[0] < 0) ? rpy[0] + 2 * M_PI : rpy[0];
     return rpy;
   }
 
@@ -240,33 +228,14 @@ namespace franka_controllers
     {
       cmd_vel[3] += copysign(angular_ramp, desired_w_x - prev_vel[3]);
     }
-    else
-    {
-      cmd_vel[3] += 0.0;
-    }
     if (desired_w_y != prev_vel[4])
     {
       cmd_vel[4] += copysign(angular_ramp, desired_w_y - prev_vel[4]);
     }
-    else
-    {
-      cmd_vel[4] += 0.0;
-    }
-
     if (desired_w_z != prev_vel[5])
     {
       cmd_vel[5] += copysign(angular_ramp, desired_w_z - prev_vel[5]);
     }
-    else
-    {
-      cmd_vel[5] += 0.0;
-    }
-
-    // for (int vel_idx = 3; vel_idx <= 5; vel_idx++) {
-    //   cmd_vel[vel_idx] = (std::abs(cmd_vel[vel_idx]) < angular_max)
-    //                          ? cmd_vel[vel_idx]
-    //                          : copysign(angular_max, cmd_vel[vel_idx]);
-    // }
 
     // std::cout << "--------------------------INFO-----------------------------" << std::endl;
     // std::cout << "e_v_x:" << e_v_x << " e_v_y:" << e_v_y << " e_v_z:" << e_v_z << std::endl;
@@ -280,7 +249,7 @@ namespace franka_controllers
     // std::cout << "-----------------------------------------------------------" << std::endl;
 
     return cmd_vel;
-  } // namespace franka_example_controllers
+  }
 
   void CartesianVelocityController::starting(const ros::Time & /* time */)
   {
