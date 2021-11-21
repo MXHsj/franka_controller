@@ -76,6 +76,7 @@ namespace franka_controllers
     // robot states
     std::array<double, 16> initial_pose_{};
     std::array<double, 16> current_pose_{};
+    std::array<double, 2> initial_elbow_{};
     std::array<double, 16> last_pose_{};
     std::array<double, 12> target_pose_{};  // column major
     std::array<double, 6> cmd_vel{};        // Vx Vy Vz Wx Wy Wz

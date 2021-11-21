@@ -10,5 +10,5 @@
   <include file="$(find panda_moveit_config)/launch/panda_moveit.launch">
     <arg name="load_gripper" value="false" />
   </include>
-  <node name="move_to_start" pkg="franka_controller" type="move_to_start.py" output="screen" required="true" />
+  <node name="move_to_start" pkg="franka_controllers" type="move_to_start.py" output="screen" required="true" />
 </launch>

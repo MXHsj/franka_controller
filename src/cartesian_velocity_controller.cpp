@@ -207,10 +207,10 @@ namespace franka_controllers
     double de_w_z = prev_vel[5] - (curr_rpy[2] - prev_rpy[2]) / dt.toSec();
 
     // params
-    double linear_ramp = 0.0002;  // linear velocity increment  0.00002
-    double angular_ramp = 0.0002; // angular velocity increment 0.00002
-    double linear_max = 0.5;      // maximum linear velocity 0.2
-    double angular_max = 0.04;    // maximum angular velocity 0.02
+    double linear_ramp = 0.0002;   // linear velocity increment  0.00002
+    double angular_ramp = 0.00012; // angular velocity increment 0.00002
+    double linear_max = 0.5;       // maximum linear velocity 0.2
+    double angular_max = 0.04;     // maximum angular velocity 0.02
 
     // PD velocity command
     double desired_v_x = 0.14 * e_v_x;                    //+ 0.1 * de_v_x;      // kp = 0.1
@@ -226,37 +226,16 @@ namespace franka_controllers
       cmd_vel[0] += copysign(linear_ramp, desired_v_x - prev_vel[0]);
       // cmd_vel[0] = desired_v_x * 0.6;
     }
-
     if (std::abs(cmd_vel[1]) <= linear_max)
     {
       cmd_vel[1] += copysign(linear_ramp, desired_v_y - prev_vel[1]);
       // cmd_vel[1] = desired_v_y * 0.6;
     }
-
     if (std::abs(cmd_vel[2]) <= linear_max)
     {
       cmd_vel[2] += copysign(linear_ramp, desired_v_z - prev_vel[2]);
       // cmd_vel[2] = desired_v_z * 0.6;
     }
-
-    // if (desired_v_x != prev_vel[0]) {
-    //   cmd_vel[0] += copysign(linear_ramp, desired_v_x - prev_vel[0]);
-    // } else {
-    //   cmd_vel[0] += 0.0;
-    // }
-
-    // if (desired_v_y != prev_vel[1]) {
-    //   cmd_vel[1] += copysign(linear_ramp, desired_v_y - prev_vel[1]);
-    // } else {
-    //   cmd_vel[1] += 0.0;
-    // }
-
-    // if (desired_v_z != prev_vel[2]) {
-    //   cmd_vel[2] += copysign(linear_ramp, desired_v_z - prev_vel[2]);
-    // } else {
-    //   cmd_vel[2] += 0.0;
-    // }
-
     if (desired_w_x != prev_vel[3])
     {
       cmd_vel[3] += copysign(angular_ramp, desired_w_x - prev_vel[3]);
@@ -265,7 +244,6 @@ namespace franka_controllers
     {
       cmd_vel[3] += 0.0;
     }
-
     if (desired_w_y != prev_vel[4])
     {
       cmd_vel[4] += copysign(angular_ramp, desired_w_y - prev_vel[4]);
@@ -326,6 +304,7 @@ namespace franka_controllers
     cmd_vel_msg = nh_.subscribe("franka_cmd_vel", 1, &CartesianVelocityController::cmd_vel_callback, this);
     cmd_acc_msg = nh_.subscribe("franka_cmd_acc", 1, &CartesianVelocityController::cmd_acc_callback, this);
     // cmd_acc_msg = nh_.subscribe("cmd_js", 1, &CartesianVelocityController::cmd_acc_callback, this);
+    initial_elbow_ = velocity_cartesian_handle_->getRobotState().elbow_d;
   }
 
   void CartesianVelocityController::update(const ros::Time & /* time */, const ros::Duration &period)
@@ -349,6 +328,7 @@ namespace franka_controllers
 
     current_pose_ = velocity_cartesian_handle_->getRobotState().O_T_EE_d;
     current_wrench = velocity_cartesian_handle_->getRobotState().K_F_ext_hat_K;
+    auto curr_elbow = velocity_cartesian_handle_->getRobotState().elbow;
     double desired_Fz = 1.0; // [N]
 
     std::array<double, 6> command = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
@@ -404,20 +384,20 @@ namespace franka_controllers
         command2send = last_command;
         break;
       }
-      if ((std::abs(current_wrench[0]) + std::abs(current_wrench[0]) + std::abs(current_wrench[0])) >
-          40.0)
+      if ((std::abs(current_wrench[0]) + std::abs(current_wrench[0]) + std::abs(current_wrench[0])) > 40.0)
       {
         ROS_WARN_STREAM("TOO LARGE WRENCH, COMMAND REJECTED!");
         command2send = last_command;
         break;
       }
-      if (std::abs(command2send[i]) > 0.06)
+      if (std::abs(command2send[i]) > 0.09)
       {
         ROS_WARN_STREAM("TOO LARGE VELOCITY, COMMAND REJECTED!");
         command2send = last_command;
         break;
       }
     }
+    // velocity_cartesian_handle_->setCommand(command2send, curr_elbow);
     velocity_cartesian_handle_->setCommand(command2send);
 
     last_cmd_acc = cmd_acc;
