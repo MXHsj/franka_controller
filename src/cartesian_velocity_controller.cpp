@@ -295,7 +295,7 @@ namespace franka_controllers
     // velocity_cartesian_handle_->setCommand(command);
     // -------------------------------------------------------------------------
 
-    current_pose_ = velocity_cartesian_handle_->getRobotState().O_T_EE_d;
+    current_pose_ = velocity_cartesian_handle_->getRobotState().O_T_EE_d; // O_T_EE
     current_wrench = velocity_cartesian_handle_->getRobotState().K_F_ext_hat_K;
     auto curr_elbow = velocity_cartesian_handle_->getRobotState().elbow;
     double desired_Fz = 1.0; // [N]
@@ -328,7 +328,7 @@ namespace franka_controllers
       /* if sending desired eef acceleration */
       for (size_t i = 0; i < 6; i++)
       {
-        command[i] = cmd_acc[i]; // IIR filter
+        command[i] = cmd_acc[i];
       }
     }
 
@@ -341,13 +341,13 @@ namespace franka_controllers
     auto command2send = command;
     for (size_t i = 0; i < 6; i++)
     {
-      if (std::abs(cmd_acc[i] - last_cmd_acc[i]) > 0.03)
+      if (std::abs(cmd_acc[i] - last_cmd_acc[i]) > 0.012)
       {
         ROS_WARN_STREAM("TOO LARGE JERK, COMMAND REJECTED!");
         command2send = last_command;
         break;
       }
-      if (std::abs((command2send[i] - last_command[i]) * period.toSec()) > 0.01)
+      if (std::abs((command2send[i] - last_command[i]) * period.toSec()) > 0.008)
       {
         ROS_WARN_STREAM("TOO LARGE ACCELERATION, COMMAND REJECTED!");
         command2send = last_command;
@@ -359,7 +359,7 @@ namespace franka_controllers
         command2send = last_command;
         break;
       }
-      if (std::abs(command2send[i]) > 0.09)
+      if (std::abs(command2send[i]) > 0.2)
       {
         ROS_WARN_STREAM("TOO LARGE VELOCITY, COMMAND REJECTED!");
         command2send = last_command;
